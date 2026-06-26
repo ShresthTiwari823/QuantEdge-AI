@@ -32,11 +32,24 @@ from backend.company_insights import get_company_insights
 from backend.risk_manager import calculate_trade_levels
 from backend.portfolio_manager import get_portfolio_summary
 from backend.stock_comparison import compare_stocks
+from backend.file_storage import FileStorage
+from frontend.pdf_analyzer import render_pdf_analyzer
+
 st.set_page_config(
     page_title="QuantEdge AI",
     page_icon="📈",
     layout="wide"
 )
+
+st.sidebar.title("Navigation")
+page = st.sidebar.selectbox(
+    "Choose a section",
+    ["Market Intelligence", "PDF Analyzer"]
+)
+
+if page == "PDF Analyzer":
+    render_pdf_analyzer()
+    st.stop()
 
 st.markdown("""
 <style>
@@ -715,6 +728,83 @@ considered financial advice.
                         "📦 Total Stocks",
                         summary["stock_count"]
                     )
+
+                    storage = FileStorage()
+                    filename = f"portfolio_analysis_{symbol}"
+                    analysis_data = {
+                        "Symbol": symbol,
+                        "Investment": summary["investment"],
+                        "Current Value": summary["current"],
+                        "Profit": summary["profit"],
+                        "Return %": summary["profit_percent"],
+                        "Best Performer": summary["best_stock"],
+                        "Worst Performer": summary["worst_stock"],
+                        "Total Stocks": summary["stock_count"],
+                        "Signal": signal,
+                        "Buy Confidence": buy_confidence,
+                        "Sell Confidence": sell_confidence,
+                        "Risk": risk
+                    }
+
+                    saved_files = storage.save_all(
+                        filename,
+                        analysis_data,
+                        raw_text=(
+                            f"Symbol: {symbol}\n"
+                            f"Signal: {signal}\n"
+                            f"Buy Confidence: {buy_confidence}%\n"
+                            f"Sell Confidence: {sell_confidence}%\n"
+                            f"Risk: {risk}\n"
+                            f"Best Performer: {summary['best_stock']}\n"
+                            f"Worst Performer: {summary['worst_stock']}\n"
+                            f"Total Stocks: {summary['stock_count']}"
+                        ),
+                        save_pdf=True
+                    )
+
+                    st.caption("Saved current analysis to disk:")
+                    st.write(saved_files["JSON"])
+                    st.write(saved_files["CSV"])
+                    st.write(saved_files["Text"])
+                    st.write(saved_files["PDF"])
+
+                    st.subheader("💾 Download analysis to your device")
+                    d1, d2, d3, d4 = st.columns(4)
+
+                    with open(saved_files["JSON"], "rb") as f_json:
+                        d1.download_button(
+                            "Download JSON",
+                            f_json,
+                            file_name=os.path.basename(saved_files["JSON"]),
+                            mime="application/json"
+                        )
+
+                    with open(saved_files["CSV"], "rb") as f_csv:
+                        d2.download_button(
+                            "Download CSV",
+                            f_csv,
+                            file_name=os.path.basename(saved_files["CSV"]),
+                            mime="text/csv"
+                        )
+
+                    if saved_files["Text"]:
+                        with open(saved_files["Text"], "rb") as f_txt:
+                            d3.download_button(
+                                "Download Text",
+                                f_txt,
+                                file_name=os.path.basename(saved_files["Text"]),
+                                mime="text/plain"
+                            )
+                    else:
+                        d3.write("No raw text available")
+
+                    with open(saved_files["PDF"], "rb") as f_pdf:
+                        d4.download_button(
+                            "Download PDF",
+                            f_pdf,
+                            file_name=os.path.basename(saved_files["PDF"]),
+                            mime="application/pdf"
+                        )
 
                     st.divider()
                     st.header("⚔️ Stock Comparison")
