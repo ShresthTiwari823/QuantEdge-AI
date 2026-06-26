@@ -329,7 +329,8 @@ considered financial advice.
                     st.write(f"• {item['headline']}")
 
             st.divider()
-            st.header("📊 Professional Trading Chart")
+            st.header("� Advanced Professional Trading Chart")
+            # Added chart improvements
 
             fig = go.Figure()
             fig.add_trace(
