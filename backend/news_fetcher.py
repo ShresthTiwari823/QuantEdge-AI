@@ -1,61 +1,109 @@
+import yfinance as yf
 import requests
-from config import FINNHUB_API_KEY
+from bs4 import BeautifulSoup
+
 
 def get_stock_news(symbol):
 
-    ticker = symbol.replace(".NS", "")
+    try:
+
+        stock = yf.Ticker(symbol)
+
+        info = stock.info
+
+        company = info.get("longName")
+
+        if company is None:
+            company = symbol.replace(".NS", "")
+
+    except:
+
+        company = symbol.replace(".NS", "")
+
+    company = company.replace("Limited", "")
+    company = company.replace("Ltd", "")
+    company = company.strip()
 
     url = (
-        f"https://finnhub.io/api/v1/company-news"
-        f"?symbol={ticker}"
-        f"&from=2025-01-01"
-        f"&to=2026-12-31"
-        f"&token={FINNHUB_API_KEY}"
+        "https://news.google.com/rss/search?"
+        f"q={company}+stock"
     )
 
     try:
 
-        response = requests.get(url)
+        xml = requests.get(
+            url,
+            timeout=10
+        ).text
 
-        data = response.json()
+        soup = BeautifulSoup(
+            xml,
+            "xml"
+        )
+
+        items = soup.find_all("item")[:10]
 
         headlines = []
 
-        positive_words = [
-            "gain", "growth", "profit", "surge",
-            "bullish", "buy", "record", "strong"
+        positive = [
+            "profit",
+            "growth",
+            "surge",
+            "record",
+            "buy",
+            "strong",
+            "expands",
+            "beat",
+            "rise",
+            "bullish",
+            "upgrade",
+            "positive"
         ]
 
-        negative_words = [
-            "loss", "fall", "drop", "bearish",
-            "sell", "weak", "decline", "crash"
+        negative = [
+            "loss",
+            "fall",
+            "drop",
+            "decline",
+            "bearish",
+            "downgrade",
+            "crash",
+            "weak",
+            "cuts",
+            "fraud",
+            "lawsuit",
+            "negative"
         ]
 
-        sentiment_score = 0
+        score = 0
 
-        for item in data[:10]:
+        for item in items:
 
-            headline = item.get("headline", "")
+            title = item.title.text
 
-            headlines.append({
-                "headline": headline,
-                "source": item.get("source", "")
-            })
+            source = item.source.text if item.source else ""
 
-            text = headline.lower()
+            headlines.append(
+                {
+                    "headline": title,
+                    "source": source
+                }
+            )
 
-            for word in positive_words:
+            text = title.lower()
+
+            for word in positive:
                 if word in text:
-                    sentiment_score += 1
+                    score += 1
 
-            for word in negative_words:
+            for word in negative:
                 if word in text:
-                    sentiment_score -= 1
+                    score -= 1
 
-        if sentiment_score > 2:
+        if score >= 3:
             sentiment = "POSITIVE"
 
-        elif sentiment_score < -2:
+        elif score <= -3:
             sentiment = "NEGATIVE"
 
         else:
@@ -64,7 +112,7 @@ def get_stock_news(symbol):
         return {
             "news": headlines,
             "sentiment": sentiment,
-            "score": sentiment_score
+            "score": score
         }
 
     except Exception:

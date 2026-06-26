@@ -1,5 +1,5 @@
 import requests
-from config import ALPHA_API_KEY
+from backend.config import ALPHA_API_KEY
 
 def get_company_overview(symbol):
 
