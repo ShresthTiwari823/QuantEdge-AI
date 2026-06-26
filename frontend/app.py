@@ -31,7 +31,7 @@ from backend.watchlist import (
 from backend.company_insights import get_company_insights
 from backend.risk_manager import calculate_trade_levels
 from backend.portfolio_manager import get_portfolio_summary
-
+from backend.stock_comparison import compare_stocks
 st.set_page_config(
     page_title="QuantEdge AI",
     page_icon="📈",
@@ -716,6 +716,83 @@ considered financial advice.
                         summary["stock_count"]
                     )
 
+                    st.divider()
+                    st.header("⚔️ Stock Comparison")
+
+                    stock_input = st.text_input(
+                        "Enter comma-separated stock symbols",
+                        "TCS.NS, INFY.NS",
+                        help="Compare two or more stocks by separating symbols with commas."
+                    )
+
+                    if st.button("Compare Stocks"):
+                        symbols = [
+                            s.strip().upper()
+                            for s in stock_input.split(",")
+                            if s.strip()
+                        ]
+
+                        if len(symbols) < 2:
+                            st.error("Please enter at least two stock symbols to compare.")
+                        else:
+                            comparison = compare_stocks(symbols)
+
+                            if comparison:
+                                compare_df = pd.DataFrame(comparison)
+                                st.dataframe(
+                                    compare_df,
+                                    use_container_width=True
+                                )
+
+                                compare_fig = go.Figure()
+
+                                for stock in symbols:
+                                    df = yf.download(
+                                        stock,
+                                        period="1y",
+                                        progress=False,
+                                        auto_adjust=True
+                                    )
+
+                                    if df.empty:
+                                        continue
+
+                                    if hasattr(df.columns, "levels"):
+                                        df.columns = df.columns.get_level_values(0)
+
+                                    if "Close" in df.columns:
+                                        compare_fig.add_trace(
+                                            go.Scatter(
+                                                x=df.index,
+                                                y=df["Close"],
+                                                mode="lines",
+                                                name=stock
+                                            )
+                                        )
+
+                                    if hasattr(df.columns, "levels"):
+                                        df.columns = df.columns.get_level_values(0)
+
+                                    if "Close" in df.columns:
+                                        compare_fig.add_trace(
+                                            go.Scatter(
+                                                x=df.index,
+                                                y=df["Close"],
+                                                mode="lines",
+                                                name=stock
+                                            )
+                                        )
+
+                                compare_fig.update_layout(
+                                    title="1 Year Stock Performance",
+                                    template="plotly_white",
+                                    height=500
+                                )
+
+                                st.plotly_chart(
+                                    compare_fig,
+                                    use_container_width=True
+                                )
                     st.subheader("🥧 Portfolio Allocation")
                     allocation = summary["allocation"]
                     pie = go.Figure(
