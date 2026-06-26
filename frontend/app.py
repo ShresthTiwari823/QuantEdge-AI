@@ -544,8 +544,18 @@ considered financial advice.
                 st.dataframe(pdf, use_container_width=True)
                 total_profit = pdf["Profit"].sum()
                 total_investment = pdf["Investment"].sum()
-                st.metric("Portfolio Profit", f"₹ {total_profit:.2f}")
-                st.metric("Total Investment", f"₹ {total_investment:.2f}")
+                profit_percent = (total_profit / total_investment) * 100 if total_investment > 0 else 0
+
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.metric("💰 Total Investment", f"₹ {total_investment:.2f}")
+
+                with col2:
+                    st.metric("📈 Portfolio Profit", f"₹ {total_profit:.2f}")
+
+                with col3:
+                    st.metric("📊 Return %", f"{profit_percent:.2f}%")
             else:
                 st.info("Portfolio is currently empty.")
 
