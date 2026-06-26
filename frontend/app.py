@@ -28,6 +28,7 @@ from backend.watchlist import (
     get_watchlist,
     remove_from_watchlist
 )
+from backend.company_insights import get_company_insights
 
 st.set_page_config(
     page_title="QuantEdge AI",
@@ -364,6 +365,38 @@ considered financial advice.
             else:
                 for item in news["news"]:
                     st.write(f"• {item['headline']}")
+
+            st.divider()
+            st.header("🏢 Company Insights")
+
+            company = get_company_insights(symbol)
+
+            if company:
+
+                c1, c2 = st.columns(2)
+
+                with c1:
+                    st.metric("🏢 Company", company["Company"])
+                    st.metric("🏭 Sector", company["Sector"])
+                    st.metric("🏢 Industry", company["Industry"])
+                    st.metric("🌍 Country", company["Country"])
+                    st.metric("👨‍💼 Employees", company["Employees"])
+
+                with c2:
+                    st.metric("💰 Market Cap", company["Market Cap"])
+                    st.metric("📈 PE Ratio", company["PE Ratio"])
+                    st.metric("💵 EPS", company["EPS"])
+                    st.metric("📊 52W High", company["52 Week High"])
+                    st.metric("📉 52W Low", company["52 Week Low"])
+
+                st.subheader("🌐 Website")
+                st.write(company["Website"])
+
+                st.subheader("📝 Company Overview")
+                st.write(company["Business Summary"])
+
+            else:
+                st.warning("Company information not available.")
 
             st.divider()
             st.header("� Advanced Professional Trading Chart")
