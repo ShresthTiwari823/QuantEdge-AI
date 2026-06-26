@@ -23,6 +23,11 @@ from backend.portfolio import (
     add_stock,
     get_portfolio
 )
+from backend.watchlist import (
+    add_to_watchlist,
+    get_watchlist,
+    remove_from_watchlist
+)
 
 st.set_page_config(
     page_title="QuantEdge AI",
@@ -63,30 +68,62 @@ except Exception:
     )
     st.stop()
 
-symbol = st.text_input(
-    "Enter Stock Symbol",
-    "",
-    placeholder="Example: TCS.NS, SBIN.NS, AAPL, TSLA, BTC-USD"
-).strip().upper()
 
-if symbol:
-    try:
-        with st.spinner("Analyzing..."):
-            df = yf.download(
-                tickers=symbol,
-                period="1y",
-                interval="1d",
-                auto_adjust=True,
-                progress=False,
-                threads=False
-            )
+def rerun_app():
+    if hasattr(st, "rerun"):
+        st.rerun()
+    elif hasattr(st, "experimental_rerun"):
+        st.experimental_rerun()
+
+
+def load_watchlist_symbol(stock):
+    st.session_state["symbol_to_load"] = stock
+    rerun_app()
+
+
+def remove_watchlist_symbol(stock):
+    remove_from_watchlist(stock)
+    rerun_app()
+
+
+if "symbol_to_load" in st.session_state:
+    st.session_state["symbol_input"] = st.session_state.pop("symbol_to_load")
+
+
+default_symbol = st.session_state.get("symbol_input", "")
+
+symbol_input = st.text_input(
+    "Enter Stock Symbol",
+    value=default_symbol,
+    placeholder="Example: TCS.NS, SBIN.NS, AAPL, TSLA, BTC-USD",
+    key="symbol_input"
+)
+
+symbol = symbol_input.strip().upper()
+
+symbols = [s.strip().upper() for s in symbol.split(",") if s.strip()]
+
+if symbols:
+    for current_symbol in symbols:
+        symbol = current_symbol
+        st.subheader(f"📌 Analysis for {symbol}")
+        try:
+            with st.spinner(f"Analyzing {symbol}..."):
+                df = yf.download(
+                    tickers=symbol,
+                    period="1y",
+                    interval="1d",
+                    auto_adjust=True,
+                    progress=False,
+                    threads=False
+                )
 
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
 
             if df.empty:
-                st.error("Invalid Stock Symbol")
-                st.stop()
+                st.error(f"Invalid Stock Symbol: {symbol}")
+                continue
 
             close = df["Close"]
             high = df["High"]
@@ -559,5 +596,36 @@ considered financial advice.
             else:
                 st.info("Portfolio is currently empty.")
 
-    except Exception as e:
-        st.error(f"❌ {str(e)}")
+            st.divider()
+            st.header("⭐ Watchlist")
+
+            if st.button("⭐ Add Current Stock"):
+                add_to_watchlist(symbol)
+                st.success(f"{symbol} added to Watchlist!")
+
+            watchlist = get_watchlist()
+
+            if watchlist:
+
+                st.subheader("Saved Stocks")
+
+                for stock in watchlist:
+
+                    c1, c2, c3 = st.columns([6, 2, 2])
+
+                    with c1:
+                        st.write(f"📈 {stock}")
+
+                    with c2:
+                        if st.button("Load", key=f"load_{stock}"):
+                            load_watchlist_symbol(stock)
+
+                    with c3:
+                        if st.button("Remove", key=f"remove_{stock}"):
+                            remove_watchlist_symbol(stock)
+
+            else:
+                st.info("Watchlist is empty.")
+
+        except Exception as e:
+            st.error(f"❌ {str(e)}")
