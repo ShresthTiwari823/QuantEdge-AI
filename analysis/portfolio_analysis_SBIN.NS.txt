@@ -1,0 +1,8 @@
+Symbol: SBIN.NS
+Signal: BUY
+Buy Confidence: 75.65%
+Sell Confidence: 47.35%
+Risk: LOW
+Best Performer: SBIN.NS
+Worst Performer: SBIN.NS
+Total Stocks: 1

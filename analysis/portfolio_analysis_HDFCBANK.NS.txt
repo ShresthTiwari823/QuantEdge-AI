@@ -1,0 +1,8 @@
+Symbol: HDFCBANK.NS
+Signal: BUY
+Buy Confidence: 65.66%
+Sell Confidence: 52.34%
+Risk: MEDIUM
+Best Performer: SBIN.NS
+Worst Performer: SBIN.NS
+Total Stocks: 1
