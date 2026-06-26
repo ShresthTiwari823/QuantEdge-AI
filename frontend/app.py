@@ -30,6 +30,7 @@ from backend.watchlist import (
 )
 from backend.company_insights import get_company_insights
 from backend.risk_manager import calculate_trade_levels
+from backend.portfolio_manager import get_portfolio_summary
 
 st.set_page_config(
     page_title="QuantEdge AI",
@@ -665,21 +666,75 @@ considered financial advice.
             portfolio = get_portfolio()
             if len(portfolio) > 0:
                 pdf = pd.DataFrame(portfolio)
-                st.dataframe(pdf, use_container_width=True)
-                total_profit = pdf["Profit"].sum()
-                total_investment = pdf["Investment"].sum()
-                profit_percent = (total_profit / total_investment) * 100 if total_investment > 0 else 0
+                pdf = pdf.rename(columns={"Stock": "Symbol"})
+                styled_pdf = pdf.style.format({
+                    "Buy Price": "₹ {:,.2f}",
+                    "Current Price": "₹ {:,.2f}",
+                    "Investment": "₹ {:,.2f}",
+                    "Current Value": "₹ {:,.2f}",
+                    "Profit": "₹ {:,.2f}",
+                    "Return %": "{:.2f}%"
+                })
+                st.dataframe(styled_pdf, use_container_width=True)
 
-                col1, col2, col3 = st.columns(3)
+                summary = get_portfolio_summary()
+                if summary:
+                    st.divider()
+                    st.header("📊 Portfolio Analytics")
+                    c1, c2, c3, c4 = st.columns(4)
 
-                with col1:
-                    st.metric("💰 Total Investment", f"₹ {total_investment:.2f}")
+                    c1.metric(
+                        "Investment",
+                        f"₹ {summary['investment']:.2f}"
+                    )
+                    c2.metric(
+                        "Current Value",
+                        f"₹ {summary['current']:.2f}"
+                    )
+                    c3.metric(
+                        "Profit / Loss",
+                        f"₹ {summary['profit']:.2f}"
+                    )
+                    c4.metric(
+                        "Return %",
+                        f"{summary['profit_percent']:.2f}%"
+                    )
 
-                with col2:
-                    st.metric("📈 Portfolio Profit", f"₹ {total_profit:.2f}")
+                    st.subheader("📌 Portfolio Insights")
+                    a1, a2, a3 = st.columns(3)
 
-                with col3:
-                    st.metric("📊 Return %", f"{profit_percent:.2f}%")
+                    a1.metric(
+                        "🏆 Best Performer",
+                        summary["best_stock"]
+                    )
+                    a2.metric(
+                        "📉 Worst Performer",
+                        summary["worst_stock"]
+                    )
+                    a3.metric(
+                        "📦 Total Stocks",
+                        summary["stock_count"]
+                    )
+
+                    st.subheader("🥧 Portfolio Allocation")
+                    allocation = summary["allocation"]
+                    pie = go.Figure(
+                        data=[
+                            go.Pie(
+                                labels=[x["Symbol"] for x in allocation],
+                                values=[x["Investment"] for x in allocation],
+                                hole=0.4
+                            )
+                        ]
+                    )
+                    pie.update_layout(
+                        template="plotly_white",
+                        height=500
+                    )
+                    st.plotly_chart(
+                        pie,
+                        use_container_width=True
+                    )
             else:
                 st.info("Portfolio is currently empty.")
 
