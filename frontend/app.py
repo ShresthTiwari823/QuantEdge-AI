@@ -29,6 +29,7 @@ from backend.watchlist import (
     remove_from_watchlist
 )
 from backend.company_insights import get_company_insights
+from backend.risk_manager import calculate_trade_levels
 
 st.set_page_config(
     page_title="QuantEdge AI",
@@ -355,6 +356,59 @@ It is intended for educational purposes and should not be
 considered financial advice.
 """
             )
+
+            st.divider()
+            st.header("🎯 AI Trade Setup")
+
+            trade = calculate_trade_levels(
+                latest["Close"],
+                signal,
+                latest["ATR"]
+            )
+
+            c1, c2, c3 = st.columns(3)
+
+            with c1:
+                st.metric(
+                    "💰 Entry",
+                    f"₹ {trade['Entry']}"
+                )
+
+                st.metric(
+                    "🛑 Stop Loss",
+                    f"₹ {trade['Stop Loss']}"
+                )
+
+            with c2:
+
+                st.metric(
+                    "🎯 Target 1",
+                    f"₹ {trade['Target 1']}"
+                )
+
+                st.metric(
+                    "🎯 Target 2",
+                    f"₹ {trade['Target 2']}"
+                )
+
+            with c3:
+
+                st.metric(
+                    "⚖ Risk Reward",
+                    f"1 : {trade['Risk Reward']}"
+                )
+
+                if signal == "BUY":
+
+                    st.success("📈 Long Trade")
+
+                elif signal == "SELL":
+
+                    st.error("📉 Short Trade")
+
+                else:
+
+                    st.warning("⏳ Wait for Confirmation")
 
             st.divider()
             st.header("📰 AI News & Market Sentiment")
