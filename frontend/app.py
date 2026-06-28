@@ -33,6 +33,7 @@ from backend.risk_manager import calculate_trade_levels
 from backend.portfolio_manager import get_portfolio_summary
 from backend.stock_comparison import compare_stocks
 from backend.file_storage import FileStorage
+from frontend.ai_assistant_page import ai_chat
 from frontend.pdf_analyzer import render_pdf_analyzer
 
 st.set_page_config(
@@ -44,8 +45,12 @@ st.set_page_config(
 st.sidebar.title("Navigation")
 page = st.sidebar.selectbox(
     "Choose a section",
-    ["Market Intelligence", "PDF Analyzer"]
+    ["Market Intelligence", "AI Assistant", "PDF Analyzer"]
 )
+
+if page == "AI Assistant":
+    ai_chat()
+    st.stop()
 
 if page == "PDF Analyzer":
     render_pdf_analyzer()
